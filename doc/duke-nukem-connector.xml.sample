@@ -1,0 +1,3 @@
+<!-- BEGIN_INCLUDE(duke-nukem:greet) -->
+    <duke-nukem:greet config-ref="" friend="#[map-payload:friend]" />
+<!-- END_INCLUDE(duke-nukem:greet) -->

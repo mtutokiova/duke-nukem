@@ -2,6 +2,7 @@ package org.mule.modules.dukenukem.client;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.MultivaluedMap;
@@ -11,7 +12,7 @@ import org.codehaus.jackson.jaxrs.JacksonJaxbJsonProvider;
 import org.mule.modules.dukenukem.config.ConnectorConfig;
 import org.mule.modules.dukenukem.entities.DukeNukemGetApplicationTokenResponse;
 import org.mule.modules.dukenukem.entities.DukeNukemGetUserJsonResponse;
-import org.mule.modules.dukenukem.entities.GetUserDetailsResponse;
+import org.mule.modules.dukenukem.exception.DukeNukemBusinessException;
 import org.mule.modules.dukenukem.exception.DukeNukemConnectorException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +27,7 @@ import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 /**
- * Client implementation for calling DukeNukem endpoinds.
+ * Client implementation for calling DukeNukem endpoints.
  * @author martinatutokiova
  */
 
@@ -34,6 +35,7 @@ public class DukeNukemClient {
 
 	private static final String ECONOMIST_GET_APPLICATION_TOKEN = "economist.getApplicationToken";
 	private static final String ECONOMIST_GET_AUTHORIZED = "economist.getAuthorized";
+	private static final String ECONOMIST_GET_EMAIL_STATUS = "economist.getEmailStatus";
 	private static final String ECONOMIST_GET_USER_DETAILS = "economist.getUserDetails";
     private static final String ECONOMIST_GET_USER_JSON = "economist.getUserJson";
 
@@ -58,28 +60,47 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns response from the DukeNukem economist.getAuthorized call */
-	public String getAuthorized(String email, String password) throws DukeNukemConnectorException{
-		return getValidatedResponse(webResource
-				.path(ECONOMIST_GET_AUTHORIZED)
-				.queryParam("token", getApplicationToken())
-				.queryParam("ts", Long.toString(lastUpdatedTsSeconds))
-				.queryParam("p", getHashedPassword(password))
-				.queryParam("e", email)
-				.get(ClientResponse.class));
+	public String getAuthorized(String email, String password) throws DukeNukemConnectorException {
+		try {
+			return getValidatedResponse(webResource
+					.path(ECONOMIST_GET_AUTHORIZED)
+					.queryParam("token", getApplicationToken())
+					.queryParam("ts", Long.toString(lastUpdatedTsSeconds))
+					.queryParam("p", getHashedPassword(password))
+					.queryParam("e", email)
+					.get(ClientResponse.class));
+		} catch (DukeNukemBusinessException e) {
+			return e.getMessage();
+		}
 	}
 	
 	/** Returns response from the DukeNukem economist.getUserDetails call */
-	public GetUserDetailsResponse getUserDetails(String email, String password) throws DukeNukemConnectorException{
+	public String getUserDetails(String email, String password) throws DukeNukemConnectorException {
 		try {
-			String responseString = getValidatedResponse(webResource
+			return getValidatedResponse(webResource
 					.path(ECONOMIST_GET_USER_DETAILS)
 					.queryParam("token", getApplicationToken())
 					.queryParam("ts", Long.toString(lastUpdatedTsSeconds))
 					.queryParam("u", URLEncoder.encode(getUserJson(email, password), "UTF-8"))
 					.get(ClientResponse.class));
-			return jsonObjectMapper.readValue(responseString, GetUserDetailsResponse.class);
 		} catch (IOException | ClientHandlerException | UniformInterfaceException e) {
 			throw new DukeNukemConnectorException(e.getMessage());
+		} catch (DukeNukemBusinessException e) {
+			return e.getMessage();
+		}
+	}
+	
+	/** Returns response from the DukeNukem economist.getEmailStatus call */
+	public String getEmailStatus(String email) throws DukeNukemConnectorException {
+		try {
+			return getValidatedResponse(legacyWebResource
+					.path(ECONOMIST_GET_EMAIL_STATUS)
+					.queryParam("token", getApplicationToken())
+					.queryParam("ts", Long.toString(lastUpdatedTsSeconds))
+					.queryParam("email", email)
+					.get(ClientResponse.class));
+		} catch (DukeNukemBusinessException e) {
+			return e.getMessage();
 		}
 	}
 	
@@ -88,7 +109,7 @@ public class DukeNukemClient {
 	/////////////
 	
 	/** Returns the user data for a user with the given email in json format which is required for other endpoints */
-	private String getUserJson(String email, String password) throws DukeNukemConnectorException{
+	private String getUserJson(String email, String password) throws DukeNukemConnectorException, DukeNukemBusinessException {
 		MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("token", getApplicationToken());
 		formData.add("ts", Long.toString(lastUpdatedTsSeconds));
@@ -109,7 +130,7 @@ public class DukeNukemClient {
 	}
 
 	/** Returns an active application token */
-	private String getApplicationToken() throws DukeNukemConnectorException{
+	private String getApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException {
 		if(System.currentTimeMillis()/1000 - lastUpdatedTsSeconds >= TimeUnit.HOURS.toSeconds(23)){
 			requestNewToken();
 		} 
@@ -117,18 +138,30 @@ public class DukeNukemClient {
     }
 	
 	/** Request new token from DukeNukem */
-	private void requestNewToken() throws DukeNukemConnectorException {
+	private void requestNewToken() throws DukeNukemConnectorException, DukeNukemBusinessException {
 		DukeNukemClient.lastUpdatedTsSeconds = System.currentTimeMillis()/1000;
 		DukeNukemClient.token = getNewApplicationToken();
 	}
 
 	/** Returns new application token */
-	private String getNewApplicationToken() throws DukeNukemConnectorException {
-		ClientResponse clientResponse = webResource
+	private String getNewApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException {
+		WebResource request = webResource
 				.path(ECONOMIST_GET_APPLICATION_TOKEN)
 				.queryParam("id", generateHashedValue(connectorConfig.getThirdPartyId() + Long.toString(lastUpdatedTsSeconds)))
-				.queryParam("ts", Long.toString(lastUpdatedTsSeconds))
+				.queryParam("ts", Long.toString(lastUpdatedTsSeconds));
+		
+		System.out.println("Sending request: " + request);
+		System.out.println("Request properties: " + request.getProperties());
+		
+		ClientResponse clientResponse = request
 				.get(ClientResponse.class);
+		
+		System.out.println("Response: " + clientResponse);
+		System.out.println("Reponse headers: " + clientResponse.getHeaders());
+		System.out.println("Response properties: ");
+		for (Entry<String, Object> property : clientResponse.getProperties().entrySet()) {
+			System.out.println("property " + property.getKey() + ": " + property.getValue());	
+		}
 		
 		String responseString = getValidatedResponse(clientResponse);
 		
@@ -140,16 +173,18 @@ public class DukeNukemClient {
 	}
 
 	/** Returns the response string in case of valid response or throws an exception in case of invalid response */
-	private String getValidatedResponse(ClientResponse clientResponse) throws DukeNukemConnectorException {
+	private String getValidatedResponse(ClientResponse clientResponse) throws DukeNukemConnectorException, DukeNukemBusinessException {
 		String responseEntity = clientResponse.getEntity(String.class);
-		if(clientResponse.getStatus() != 200 || responseEntity.equals("false")){
+		if(clientResponse.getStatus() != 200 ){
 			throw new DukeNukemConnectorException(responseEntity);
+		} else if (responseEntity.equals("false") || responseEntity.contains("\"valid\":false")){
+			throw new DukeNukemBusinessException(responseEntity);
 		}
 		return responseEntity;
 	}
 	
 	/** Returns hashed password */
-	private String getHashedPassword(String password) throws DukeNukemConnectorException {
+	private String getHashedPassword(String password) throws DukeNukemConnectorException, DukeNukemBusinessException {
 		return generateHashedValue(generateHashedValue(password) + "." + getApplicationToken());
 	}
 	
@@ -160,7 +195,7 @@ public class DukeNukemClient {
 
 	/** Returns the URL to DukeNukem server */
 	private String getDukeNukemUrl() {
-		return "http://" + connectorConfig.getHost() + "/" + connectorConfig.getVersionNumber();
+		return "https://" + connectorConfig.getHost() + "/" + connectorConfig.getVersionNumber();
 	}
 	
 	/** Returns the legacy URL to DukeNukem server */
@@ -175,10 +210,11 @@ public class DukeNukemClient {
 		connectorConfig.setVersionNumber("3.0");
 		
 		DukeNukemClient dukeNukemClient = new DukeNukemClient(connectorConfig);
-		System.out.println(dukeNukemClient.getApplicationToken());
+//		System.out.println(dukeNukemClient.getApplicationToken());
 		System.out.println(dukeNukemClient.getAuthorized("martina.tutokiova@globallogic.com", "orange1234"));
-		System.out.println(dukeNukemClient.getUserJson("martina.tutokiova@globallogic.com", "orange1234"));
+//		System.out.println(dukeNukemClient.getUserJson("martina.tutokiova@globallogic.com", "orange1234"));
 		System.out.println(dukeNukemClient.getUserDetails("martina.tutokiova@globallogic.com", "orange1234"));
+		System.out.println(dukeNukemClient.getEmailStatus("martina.tutokiova@globallogic.com"));
 	}
 
 }

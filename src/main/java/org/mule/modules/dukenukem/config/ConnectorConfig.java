@@ -8,7 +8,7 @@ import org.mule.api.annotations.param.Default;
 public class ConnectorConfig {
 
 	@Configurable
-    @Default(value="www.economist.com/api")
+    @Default(value="economist.com/api")
     private String host;
 
     @Configurable

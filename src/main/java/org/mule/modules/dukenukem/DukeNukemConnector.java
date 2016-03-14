@@ -6,7 +6,6 @@ import org.mule.api.annotations.Processor;
 import org.mule.api.annotations.lifecycle.Start;
 import org.mule.modules.dukenukem.client.DukeNukemClient;
 import org.mule.modules.dukenukem.config.ConnectorConfig;
-import org.mule.modules.dukenukem.entities.GetUserDetailsResponse;
 import org.mule.modules.dukenukem.exception.DukeNukemConnectorException;
 
 @Connector(name="duke-nukem", friendlyName="DukeNukem")
@@ -44,8 +43,20 @@ public class DukeNukemConnector {
      * @throws DukeNukemConnectorException 
      */
     @Processor
-	public GetUserDetailsResponse getUserDetails(String email, String password) throws DukeNukemConnectorException{
+	public String getUserDetails(String email, String password) throws DukeNukemConnectorException{
 		return getClient().getUserDetails(email, password);
+	}
+    
+    /**
+     * Custom processor to call economist.getEmailStatus endpoint
+     *
+    * @param email user email
+     * @return The response of economist.getEmailStatus call
+     * @throws DukeNukemConnectorException 
+     */
+    @Processor
+	public String getEmailStatus(String email) throws DukeNukemConnectorException{
+		return getClient().getEmailStatus(email);
 	}
 
     public ConnectorConfig getConfig() {

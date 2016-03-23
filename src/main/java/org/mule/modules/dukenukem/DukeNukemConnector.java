@@ -10,6 +10,16 @@ import org.mule.modules.dukenukem.exception.DukeNukemConnectorException;
 
 @Connector(name="duke-nukem", friendlyName="DukeNukem")
 public class DukeNukemConnector {
+	
+	public enum Gender{
+		F,
+		M
+	}
+	
+	public enum YesNoEnum{
+		Y,
+		N
+	}
 
 	@Config
     ConnectorConfig config;
@@ -38,13 +48,12 @@ public class DukeNukemConnector {
      * Custom processor to call economist.getUserDetails endpoint
      *
     * @param email user email
-     * @param password user password
      * @return The response of economist.getUserDetails call
      * @throws DukeNukemConnectorException 
      */
     @Processor
-	public String getUserDetails(String email, String password) throws DukeNukemConnectorException{
-		return getClient().getUserDetails(email, password);
+	public String getUserDetails(String email) throws DukeNukemConnectorException{
+		return getClient().getUserDetails(email);
 	}
     
     /**
@@ -57,6 +66,17 @@ public class DukeNukemConnector {
     @Processor
 	public String getEmailStatus(String email) throws DukeNukemConnectorException{
 		return getClient().getEmailStatus(email);
+	}
+    
+    /**
+     * Custom processor to call economist.addUser endpoint
+     *
+     * @return The response of economist.addUser call
+     * @throws DukeNukemConnectorException 
+     */
+    @Processor
+	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, YesNoEnum emailOnline, YesNoEnum emailGroupCompanies) throws DukeNukemConnectorException{
+		return getClient().addUser(email, password, countryCode, gender, yearOfBirth, firstName, surname, emailOnline, emailGroupCompanies);
 	}
 
     public ConnectorConfig getConfig() {

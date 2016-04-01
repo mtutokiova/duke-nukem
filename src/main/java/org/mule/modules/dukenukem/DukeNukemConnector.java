@@ -16,11 +16,6 @@ public class DukeNukemConnector {
 		M
 	}
 	
-	public enum YesNoEnum{
-		Y,
-		N
-	}
-
 	@Config
     ConnectorConfig config;
     
@@ -75,8 +70,19 @@ public class DukeNukemConnector {
      * @throws DukeNukemConnectorException 
      */
     @Processor
-	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, YesNoEnum emailOnline, YesNoEnum emailGroupCompanies) throws DukeNukemConnectorException{
+	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, Boolean emailOnline, Boolean emailGroupCompanies) throws DukeNukemConnectorException{
 		return getClient().addUser(email, password, countryCode, gender, yearOfBirth, firstName, surname, emailOnline, emailGroupCompanies);
+	}
+    
+    /**
+     * Custom processor to call economist.addEntitlement endpoint
+     *
+     * @return The response of economist.addEntitlement call
+     * @throws DukeNukemConnectorException 
+     */
+    @Processor
+	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException{
+		return getClient().addEntitlement(email, productCode, termCode, promoCode, startDate, endDate, orderId);
 	}
 
     public ConnectorConfig getConfig() {

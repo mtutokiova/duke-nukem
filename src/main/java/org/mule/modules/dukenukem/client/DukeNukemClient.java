@@ -2,6 +2,7 @@ package org.mule.modules.dukenukem.client;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.Date;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
@@ -10,7 +11,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.codehaus.jackson.jaxrs.JacksonJaxbJsonProvider;
 import org.mule.modules.dukenukem.DukeNukemConnector.Gender;
-import org.mule.modules.dukenukem.DukeNukemConnector.YesNoEnum;
 import org.mule.modules.dukenukem.config.ConnectorConfig;
 import org.mule.modules.dukenukem.entities.DukeNukemGetApplicationTokenResponse;
 import org.mule.modules.dukenukem.entities.DukeNukemGetUserJsonResponse;
@@ -36,6 +36,7 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 public class DukeNukemClient {
 
 	private static final String ECONOMIST_ADD_USER = "economist.addUser";
+	private static final String ECONOMIST_ADD_ENTITLEMENT = "economist.addEntitlement";
 	private static final String ECONOMIST_GET_APPLICATION_TOKEN = "economist.getApplicationToken";
 	private static final String ECONOMIST_GET_AUTHORIZED = "economist.getAuthorized";
 	private static final String ECONOMIST_GET_EMAIL_STATUS = "economist.getEmailStatus";
@@ -108,7 +109,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns response from the DukeNukem economist.addUser call */
-	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, YesNoEnum emailOnline, YesNoEnum emailGroupCompanies) throws DukeNukemConnectorException {
+	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, Boolean emailOnline, Boolean emailGroupCompanies) throws DukeNukemConnectorException {
 		try {
 			MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 			formData.add("token", getApplicationToken());
@@ -116,15 +117,39 @@ public class DukeNukemClient {
 			formData.add("e", email);
 			formData.add("p", password);
 			formData.add("c", countryCode);
-			formData.add("g", gender.name());
+			formData.add("g", gender != null ? gender.name() : null);
 			formData.add("y", yearOfBirth);
 			formData.add("gn", firstName);
 			formData.add("fn", surname);
-			formData.add("eo", emailOnline.name());
-			formData.add("eg", emailGroupCompanies.name());
+			formData.add("eo", emailOnline ? "Y" : "N");
+			formData.add("eg", emailGroupCompanies ? "Y" : "N");
 
 			return getValidatedResponse(legacyWebResource
 					.path(ECONOMIST_ADD_USER)
+					.post(ClientResponse.class, formData));
+			
+		} catch (DukeNukemBusinessException e) {
+			return e.getMessage();
+		}
+	}
+	
+	/** Returns response from the DukeNukem economist.addEntitlement call */
+	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException{
+		try {
+			MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
+			formData.add("token", getApplicationToken());
+			formData.add("ts", Long.toString(lastUpdatedTsSeconds));
+			formData.add("e", email);
+			formData.add("u", getUserJson(email));
+			formData.add("product", productCode);
+			formData.add("term", termCode);
+			formData.add("promo", promoCode);
+			formData.add("start", startDate);
+			formData.add("end", endDate);
+			formData.add("orderid", orderId);
+
+			return getValidatedResponse(legacyWebResource
+					.path(ECONOMIST_ADD_ENTITLEMENT)
 					.post(ClientResponse.class, formData));
 			
 		} catch (DukeNukemBusinessException e) {
@@ -232,14 +257,17 @@ public class DukeNukemClient {
 		connectorConfig.setThirdPartyId("a73fc5db8b93b5e401b7b5458ff776a1");
 		connectorConfig.setVersionNumber("3.0");
 		
+		System.out.println((new Date()).getTime()/1000);
+		
 		DukeNukemClient dukeNukemClient = new DukeNukemClient(connectorConfig);
-//		System.out.println(dukeNukemClient.getApplicationToken() + " " + DukeNukemClient.lastUpdatedTsSeconds);
-//		System.out.println(dukeNukemClient.getAuthorized("martina.tutokiova%40globallogic.com", "orange1234"));
-//		System.out.println(dukeNukemClient.getUserJson("martina.tutokiova@globallogic.com", "orange1234"));
+		System.out.println(dukeNukemClient.getApplicationToken() + " " + DukeNukemClient.lastUpdatedTsSeconds);
+//		System.out.println(dukeNukemClient.getAuthorized("martina.test1234567@globallogic.com", ""));
+		System.out.println(dukeNukemClient.getUserJson("martina.tutokiova@globallogic.com"));
 //		System.out.println(dukeNukemClient.getUserDetails("martina.tutokiova@globallogic.com", "orange1234"));
 //		System.out.println(dukeNukemClient.getEmailStatus("martina.tutokiova@globallogic.com"));
-		System.out.println(dukeNukemClient.addUser("martina.tuto@globallogic.com", "orange1234", "SK", Gender.M, "1986", "Martina", "Tut", YesNoEnum.Y, YesNoEnum.N));
-		System.out.println(dukeNukemClient.getUserDetails("martina.tuto@globallogic.com"));
+//		System.out.println(dukeNukemClient.addUser("martina.tuto@globallogic.com", "orange1234", "SK", Gender.M, "1986", "Martina", "Tut", YesNoEnum.Y, YesNoEnum.N));
+//		System.out.println(dukeNukemClient.getUserDetails("martina.tuto@globallogic.com"));
+//		System.out.println(dukeNukemClient.addEntitlement("martina.tutokiova@globallogic.com", "A", "ABC", "PROMO", "1458815627", "", ""));
 	}
 
 }

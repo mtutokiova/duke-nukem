@@ -7,6 +7,7 @@ import org.mule.api.annotations.lifecycle.Start;
 import org.mule.modules.dukenukem.client.DukeNukemClient;
 import org.mule.modules.dukenukem.config.ConnectorConfig;
 import org.mule.modules.dukenukem.exception.DukeNukemConnectorException;
+import org.mule.modules.dukenukem.exception.DukeNukemUserNotFoundException;
 
 @Connector(name="duke-nukem", friendlyName="DukeNukem")
 public class DukeNukemConnector {
@@ -33,9 +34,10 @@ public class DukeNukemConnector {
      * @param password user password
      * @return The response of economist.getAuthorized call
      * @throws DukeNukemConnectorException 
+     * @throws DukeNukemUserNotFoundException 
      */
     @Processor
-	public String getAuthorized(String email, String password) throws DukeNukemConnectorException{
+	public String getAuthorized(String email, String password) throws DukeNukemConnectorException, DukeNukemUserNotFoundException{
 		return getClient().getAuthorized(email, password);
 	}
     
@@ -45,9 +47,10 @@ public class DukeNukemConnector {
     * @param email user email
      * @return The response of economist.getUserDetails call
      * @throws DukeNukemConnectorException 
+     * @throws DukeNukemUserNotFoundException 
      */
     @Processor
-	public String getUserDetails(String email) throws DukeNukemConnectorException{
+	public String getUserDetails(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException{
 		return getClient().getUserDetails(email);
 	}
     
@@ -57,9 +60,10 @@ public class DukeNukemConnector {
     * @param email user email
      * @return The response of economist.getEmailStatus call
      * @throws DukeNukemConnectorException 
+     * @throws DukeNukemUserNotFoundException 
      */
     @Processor
-	public String getEmailStatus(String email) throws DukeNukemConnectorException{
+	public String getEmailStatus(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException{
 		return getClient().getEmailStatus(email);
 	}
     
@@ -68,9 +72,10 @@ public class DukeNukemConnector {
      *
      * @return The response of economist.addUser call
      * @throws DukeNukemConnectorException 
+     * @throws DukeNukemUserNotFoundException 
      */
     @Processor
-	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, Boolean emailOnline, Boolean emailGroupCompanies) throws DukeNukemConnectorException{
+	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, Boolean emailOnline, Boolean emailGroupCompanies) throws DukeNukemConnectorException, DukeNukemUserNotFoundException{
 		return getClient().addUser(email, password, countryCode, gender, yearOfBirth, firstName, surname, emailOnline, emailGroupCompanies);
 	}
     
@@ -79,9 +84,10 @@ public class DukeNukemConnector {
      *
      * @return The response of economist.addEntitlement call
      * @throws DukeNukemConnectorException 
+     * @throws DukeNukemUserNotFoundException 
      */
     @Processor
-	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException{
+	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException, DukeNukemUserNotFoundException{
 		return getClient().addEntitlement(email, productCode, termCode, promoCode, startDate, endDate, orderId);
 	}
 

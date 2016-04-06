@@ -212,12 +212,8 @@ public class DukeNukemClient {
 		}
 	}
 	
-	/////////////
-	/// UTILS ///
-	/////////////
-	
 	/** Returns the user data for a user with the given email in json format which is required for other endpoints */
-	private String getUserJson(String email) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
+	public String getUserJson(String email) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
 		MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("token", getApplicationToken());
 		formData.add("ts", Long.toString(lastUpdatedTsSeconds));
@@ -235,7 +231,11 @@ public class DukeNukemClient {
 			throw new DukeNukemConnectorException(e.getMessage());
 		}
 	}
-
+	
+	/////////////
+	/// UTILS ///
+	/////////////
+	
 	/** Returns an active application token */
 	private String getApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
 		if(System.currentTimeMillis()/1000 - lastUpdatedTsSeconds >= TimeUnit.HOURS.toSeconds(23)){

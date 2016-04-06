@@ -6,6 +6,7 @@ import org.mule.api.annotations.Processor;
 import org.mule.api.annotations.lifecycle.Start;
 import org.mule.modules.dukenukem.client.DukeNukemClient;
 import org.mule.modules.dukenukem.config.ConnectorConfig;
+import org.mule.modules.dukenukem.exception.DukeNukemBusinessException;
 import org.mule.modules.dukenukem.exception.DukeNukemConnectorException;
 import org.mule.modules.dukenukem.exception.DukeNukemUserNotFoundException;
 
@@ -90,6 +91,19 @@ public class DukeNukemConnector {
 	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException, DukeNukemUserNotFoundException{
 		return getClient().addEntitlement(email, productCode, termCode, promoCode, startDate, endDate, orderId);
 	}
+    
+    /**
+     * Custom processor to call economist.getUserJson endpoint
+     *
+     * @return The response of economist.getUserJson call
+     * @throws DukeNukemConnectorException 
+     * @throws DukeNukemUserNotFoundException
+     * @throws DukeNukemUserNotFoundException 
+     */
+    @Processor
+    public String getUserJson(String email) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException{
+    	return getClient().getUserJson(email);
+    }
 
     public ConnectorConfig getConfig() {
         return config;

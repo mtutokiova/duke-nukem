@@ -39,7 +39,6 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class DukeNukemClient {
 	
-
 	private transient final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final String ECONOMIST_ADD_USER = "economist.addUser";
@@ -62,6 +61,7 @@ public class DukeNukemClient {
     private static final String NO = "N";
 
     private static final String LEGACY_VERSION = "2.0";
+    private static final int TOKEN_VALIDITY_LIMIT_HOURS = 20;
 
     private static ObjectMapper jsonObjectMapper= new ObjectMapper();
 
@@ -238,7 +238,7 @@ public class DukeNukemClient {
 	
 	/** Returns an active application token */
 	private String getApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
-		if(System.currentTimeMillis()/1000 - lastUpdatedTsSeconds >= TimeUnit.HOURS.toSeconds(23)){
+		if(System.currentTimeMillis()/1000 - lastUpdatedTsSeconds >= TimeUnit.HOURS.toSeconds(TOKEN_VALIDITY_LIMIT_HOURS)){
 			requestNewToken();
 		} 
 		return token;

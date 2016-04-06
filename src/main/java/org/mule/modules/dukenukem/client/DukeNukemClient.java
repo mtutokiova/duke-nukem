@@ -258,8 +258,14 @@ public class DukeNukemClient {
 				.queryParam("ts", Long.toString(lastUpdatedTsSeconds));
 
 		LOGGER.info("Sending request to economist.getApplicationToken: " + request);
-		
-		String responseString = getValidatedResponse(request.get(ClientResponse.class));
+
+		String responseString = null;
+				
+		try {
+			responseString = getValidatedResponse(request.get(ClientResponse.class));
+		} catch(DukeNukemBusinessException e){
+			throw new DukeNukemConnectorException(e.getMessage());
+		}
 		
 		try {
 			return jsonObjectMapper.readValue(responseString, DukeNukemGetApplicationTokenResponse.class).getToken();

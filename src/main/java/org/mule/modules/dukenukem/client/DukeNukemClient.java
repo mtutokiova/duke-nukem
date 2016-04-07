@@ -3,6 +3,8 @@ package org.mule.modules.dukenukem.client;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Date;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.MultivaluedMap;
@@ -86,14 +88,18 @@ public class DukeNukemClient {
 	/** Returns response from the DukeNukem economist.getAuthorized call */
 	public String getAuthorized(String email, String password) throws DukeNukemConnectorException, DukeNukemUserNotFoundException {
 		ClientResponse clientResponse = null;
+		
 		try {
-			clientResponse = webResource
+			WebResource request = webResource
 					.path(ECONOMIST_GET_AUTHORIZED)
 					.queryParam("token", getApplicationToken())
 					.queryParam("ts", Long.toString(lastUpdatedTsSeconds))
 					.queryParam("p", getHashedPassword(password))
-					.queryParam("e", email)
-					.get(ClientResponse.class);
+					.queryParam("e", email);
+			
+			LOGGER.info(String.format("Sending request to %s: %s", ECONOMIST_GET_AUTHORIZED, request));
+			
+			clientResponse = request.get(ClientResponse.class);
 			
 			return getValidatedResponse(clientResponse);
 			
@@ -118,12 +124,16 @@ public class DukeNukemClient {
 		}
 		
 		try {
-			return getValidatedResponse(webResource
+			WebResource request = webResource
 					.path(ECONOMIST_GET_USER_DETAILS)
 					.queryParam("token", getApplicationToken())
 					.queryParam("ts", Long.toString(lastUpdatedTsSeconds))
-					.queryParam("u", URLEncoder.encode(getUserJson(email), "UTF-8"))
-					.get(ClientResponse.class));
+					.queryParam("u", URLEncoder.encode(getUserJson(email), "UTF-8"));
+
+			LOGGER.info(String.format("Sending request to %s: %s", ECONOMIST_GET_USER_DETAILS, request));
+			
+			return getValidatedResponse(request.get(ClientResponse.class));
+			
 		} catch (IOException | ClientHandlerException | UniformInterfaceException e) {
 			throw new DukeNukemConnectorException(e.getMessage());
 		} catch (DukeNukemBusinessException e) {
@@ -134,12 +144,15 @@ public class DukeNukemClient {
 	/** Returns response from the DukeNukem economist.getEmailStatus call */
 	public String getEmailStatus(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException {
 		try {
-			return getValidatedResponse(legacyWebResource
+			WebResource request = legacyWebResource
 					.path(ECONOMIST_GET_EMAIL_STATUS)
 					.queryParam("token", getApplicationToken())
 					.queryParam("ts", Long.toString(lastUpdatedTsSeconds))
-					.queryParam("e", email)
-					.get(ClientResponse.class));
+					.queryParam("e", email);
+
+			LOGGER.info(String.format("Sending request to %s: %s", ECONOMIST_GET_EMAIL_STATUS, request));
+			
+			return getValidatedResponse(request.get(ClientResponse.class));
 		} catch (DukeNukemBusinessException e) {
 			return e.getMessage();
 		}
@@ -161,6 +174,8 @@ public class DukeNukemClient {
 			formData.add("eo", emailOnline ? YES : NO);
 			formData.add("eg", emailGroupCompanies ? YES : NO);
 
+			logInfo(ECONOMIST_ADD_USER, formData);
+			
 			getValidatedResponse(legacyWebResource
 					.path(ECONOMIST_ADD_USER)
 					.post(ClientResponse.class, formData));
@@ -186,6 +201,8 @@ public class DukeNukemClient {
 			formData.add("start", startDate);
 			formData.add("end", endDate);
 			formData.add("orderid", orderId);
+			
+			logInfo(ECONOMIST_ADD_ENTITLEMENT, formData);
 
 			String responseString = getValidatedResponse(legacyWebResource
 					.path(ECONOMIST_ADD_ENTITLEMENT)
@@ -219,6 +236,8 @@ public class DukeNukemClient {
 		formData.add("ts", Long.toString(lastUpdatedTsSeconds));
 		formData.add("e", email);
 		
+		logInfo(ECONOMIST_GET_USER_JSON, formData);
+		
 		ClientResponse clientResponse = legacyWebResource
 				.path(ECONOMIST_GET_USER_JSON)
 				.post(ClientResponse.class, formData);
@@ -231,7 +250,7 @@ public class DukeNukemClient {
 			throw new DukeNukemConnectorException(e.getMessage());
 		}
 	}
-	
+
 	/////////////
 	/// UTILS ///
 	/////////////
@@ -257,14 +276,16 @@ public class DukeNukemClient {
 				.queryParam("id", generateHashedValue(connectorConfig.getThirdPartyId() + Long.toString(lastUpdatedTsSeconds)))
 				.queryParam("ts", Long.toString(lastUpdatedTsSeconds));
 
-		LOGGER.info("Sending request to economist.getApplicationToken: " + request);
+		LOGGER.info(String.format("Sending request to %s: %s", ECONOMIST_GET_APPLICATION_TOKEN, request));
 
+		ClientResponse clientResponse = request.get(ClientResponse.class);
+		
 		String responseString = null;
 				
 		try {
-			responseString = getValidatedResponse(request.get(ClientResponse.class));
+			responseString = getValidatedResponse(clientResponse);
 		} catch(DukeNukemBusinessException e){
-			throw new DukeNukemConnectorException(e.getMessage());
+			throw new DukeNukemConnectorException(StringUtils.isEmpty(e.getMessage()) ? "Error status " + clientResponse.getStatus() : e.getMessage());
 		}
 		
 		try {
@@ -277,7 +298,11 @@ public class DukeNukemClient {
 	/** Returns the response string in case of valid response or throws an exception in case of invalid response */
 	private String getValidatedResponse(ClientResponse clientResponse) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
 		String responseEntity = clientResponse.getEntity(String.class);
-		if(clientResponse.getStatus() != 200 ){
+		int responseStatus = clientResponse.getStatus();
+
+		LOGGER.info(String.format("Getting response with status %s: %s", responseStatus, responseEntity));
+		
+		if(responseStatus != 200 ){
 			throw new DukeNukemConnectorException(responseEntity);
 		} else if(responseEntity.contains(USER_NOT_FOUND_EXCEPTION_MESSAGE)){
 			throw new DukeNukemUserNotFoundException("{" + USER_NOT_FOUND_EXCEPTION_MESSAGE + "}");
@@ -305,6 +330,15 @@ public class DukeNukemClient {
 	/** Returns the legacy URL to DukeNukem server */
 	private String getLegacyDukeNukemUrl() {
 		return "http://" + connectorConfig.getHost() + "/" + LEGACY_VERSION;
+	}
+	
+	/** Logs info about request sent to DukeNukem server */
+	private void logInfo(String endpointUrl, MultivaluedMap<String, String> formData) {
+		String properties = "";
+		for (Entry<String, List<String>> property : formData.entrySet()) {
+			properties += property.getKey() + ": " + property.getValue() + ",";	
+		}
+		LOGGER.info(String.format("Sending request to %s with properties: %s", endpointUrl, properties));
 	}
 	
 	public static void main(String[] args) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {

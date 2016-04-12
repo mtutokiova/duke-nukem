@@ -2,7 +2,6 @@ package org.mule.modules.dukenukem.client;
 
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +18,7 @@ import org.mule.modules.dukenukem.entities.DukeNukemGetApplicationTokenResponse;
 import org.mule.modules.dukenukem.entities.DukeNukemGetUserJsonResponse;
 import org.mule.modules.dukenukem.exception.DukeNukemBusinessException;
 import org.mule.modules.dukenukem.exception.DukeNukemConnectorException;
+import org.mule.modules.dukenukem.exception.DukeNukemServerErrorException;
 import org.mule.modules.dukenukem.exception.DukeNukemUserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +86,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns response from the DukeNukem economist.getAuthorized call */
-	public String getAuthorized(String email, String password) throws DukeNukemConnectorException, DukeNukemUserNotFoundException {
+	public String getAuthorized(String email, String password) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		ClientResponse clientResponse = null;
 		
 		try {
@@ -118,7 +118,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns response from the DukeNukem economist.getUserDetails call */
-	public String getUserDetails(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException {
+	public String getUserDetails(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		if(StringUtils.isBlank(email)){
 			throw new DukeNukemUserNotFoundException("{" + USER_NOT_FOUND_EXCEPTION_MESSAGE + "}");
 		}
@@ -142,7 +142,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns response from the DukeNukem economist.getEmailStatus call */
-	public String getEmailStatus(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException {
+	public String getEmailStatus(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		try {
 			WebResource request = legacyWebResource
 					.path(ECONOMIST_GET_EMAIL_STATUS)
@@ -159,7 +159,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns response from the DukeNukem economist.addUser call */
-	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, Boolean emailOnline, Boolean emailGroupCompanies) throws DukeNukemConnectorException, DukeNukemUserNotFoundException {
+	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, Boolean emailOnline, Boolean emailGroupCompanies) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		try {
 			MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 			formData.add("token", getApplicationToken());
@@ -188,7 +188,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns response from the DukeNukem economist.addEntitlement call */
-	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException, DukeNukemUserNotFoundException{
+	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		try {
 			MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 			formData.add("token", getApplicationToken());
@@ -230,7 +230,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns the user data for a user with the given email in json format which is required for other endpoints */
-	public String getUserJson(String email) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
+	public String getUserJson(String email) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("token", getApplicationToken());
 		formData.add("ts", Long.toString(lastUpdatedTsSeconds));
@@ -256,21 +256,21 @@ public class DukeNukemClient {
 	/////////////
 	
 	/** Returns an active application token */
-	private String getApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
-		if(System.currentTimeMillis()/1000 - lastUpdatedTsSeconds >= TimeUnit.HOURS.toSeconds(TOKEN_VALIDITY_LIMIT_HOURS)){
+	private String getApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
+		if(StringUtils.isEmpty(token) || System.currentTimeMillis()/1000 - lastUpdatedTsSeconds >= TimeUnit.HOURS.toSeconds(TOKEN_VALIDITY_LIMIT_HOURS)){
 			requestNewToken();
 		} 
 		return token;
     }
 	
 	/** Request new token from DukeNukem */
-	private void requestNewToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
+	private void requestNewToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		DukeNukemClient.lastUpdatedTsSeconds = System.currentTimeMillis()/1000;
 		DukeNukemClient.token = getNewApplicationToken();
 	}
 
 	/** Returns new application token */
-	private String getNewApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
+	private String getNewApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		WebResource request = webResource
 				.path(ECONOMIST_GET_APPLICATION_TOKEN)
 				.queryParam("id", generateHashedValue(connectorConfig.getThirdPartyId() + Long.toString(lastUpdatedTsSeconds)))
@@ -296,13 +296,15 @@ public class DukeNukemClient {
 	}
 
 	/** Returns the response string in case of valid response or throws an exception in case of invalid response */
-	private String getValidatedResponse(ClientResponse clientResponse) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
+	private String getValidatedResponse(ClientResponse clientResponse) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		String responseEntity = clientResponse.getEntity(String.class);
 		int responseStatus = clientResponse.getStatus();
 
 		LOGGER.info(String.format("Getting response with status %s: %s", responseStatus, responseEntity));
 		
-		if(responseStatus != 200 ){
+		if(responseStatus == 500 ){
+			throw new DukeNukemServerErrorException();
+		} else if(responseStatus != 200 ){
 			throw new DukeNukemConnectorException(responseEntity);
 		} else if(responseEntity.contains(USER_NOT_FOUND_EXCEPTION_MESSAGE)){
 			throw new DukeNukemUserNotFoundException("{" + USER_NOT_FOUND_EXCEPTION_MESSAGE + "}");
@@ -313,7 +315,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns hashed password */
-	private String getHashedPassword(String password) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
+	private String getHashedPassword(String password) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		return generateHashedValue(generateHashedValue(password) + "." + getApplicationToken());
 	}
 	
@@ -341,18 +343,18 @@ public class DukeNukemClient {
 		LOGGER.info(String.format("Sending request to %s with properties: %s", endpointUrl, properties));
 	}
 	
-	public static void main(String[] args) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException {
+	public static void main(String[] args) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		ConnectorConfig connectorConfig = new ConnectorConfig();
 		connectorConfig.setHost("stage.economist.com/api");
 		connectorConfig.setThirdPartyId("a73fc5db8b93b5e401b7b5458ff776a1");
 		connectorConfig.setVersionNumber("3.0");
 		
-		System.out.println((new Date()).getTime()/1000);
+		System.out.println(System.currentTimeMillis()/1000);
 		
 		DukeNukemClient dukeNukemClient = new DukeNukemClient(connectorConfig);
 		System.out.println(dukeNukemClient.getApplicationToken() + " " + DukeNukemClient.lastUpdatedTsSeconds);
 //		System.out.println(dukeNukemClient.getAuthorized("martina.test1234567@globallogic.com", ""));
-		System.out.println(dukeNukemClient.getUserJson("martina.tutokiova@globallogic.com"));
+//		System.out.println(dukeNukemClient.getUserJson("martina.tutokiova@globallogic.com"));
 //		System.out.println(dukeNukemClient.getUserDetails("martina.tutokiova@globallogic.com", "orange1234"));
 //		System.out.println(dukeNukemClient.getEmailStatus("martina.tutokiova@globallogic.com"));
 //		System.out.println(dukeNukemClient.addUser("martina.tuto@globallogic.com", "orange1234", "SK", Gender.M, "1986", "Martina", "Tut", YesNoEnum.Y, YesNoEnum.N));

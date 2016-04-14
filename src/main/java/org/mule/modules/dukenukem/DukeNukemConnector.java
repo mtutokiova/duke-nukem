@@ -41,7 +41,15 @@ public class DukeNukemConnector {
      */
     @Processor
 	public String getAuthorized(String email, String password) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException{
-		return getClient().getAuthorized(email, password);
+		int count = 0;
+		int maxTries = 3;
+		while(true) {
+		    try {
+		    	return getClient().getAuthorized(email, password);
+		    } catch (DukeNukemServerErrorException e) {
+		        if (++count == maxTries) throw e;
+		    }
+		}
 	}
     
     /**
@@ -55,7 +63,15 @@ public class DukeNukemConnector {
      */
     @Processor
 	public String getUserDetails(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException{
-		return getClient().getUserDetails(email);
+    	int count = 0;
+		int maxTries = 3;
+		while(true) {
+		    try {
+		    	return getClient().getUserDetails(email);
+		    } catch (DukeNukemServerErrorException e) {
+		        if (++count == maxTries) throw e;
+		    }
+		}
 	}
     
     /**
@@ -69,7 +85,15 @@ public class DukeNukemConnector {
      */
     @Processor
 	public String getEmailStatus(String email) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException{
-		return getClient().getEmailStatus(email);
+    	int count = 0;
+		int maxTries = 3;
+		while(true) {
+		    try {
+		    	return getClient().getEmailStatus(email);
+		    } catch (DukeNukemServerErrorException e) {
+		        if (++count == maxTries) throw e;
+		    }
+		}
 	}
     
     /**
@@ -82,7 +106,15 @@ public class DukeNukemConnector {
      */
     @Processor
 	public String addUser(String email, String password, String countryCode, Gender gender, String yearOfBirth, String firstName, String surname, Boolean emailOnline, Boolean emailGroupCompanies) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException{
-		return getClient().addUser(email, password, countryCode, gender, yearOfBirth, firstName, surname, emailOnline, emailGroupCompanies);
+    	int count = 0;
+		int maxTries = 3;
+		while(true) {
+		    try {
+		    	return getClient().addUser(email, password, countryCode, gender, yearOfBirth, firstName, surname, emailOnline, emailGroupCompanies);
+		    } catch (DukeNukemServerErrorException e) {
+		        if (++count == maxTries) throw e;
+		    }
+		}
 	}
     
     /**
@@ -95,7 +127,15 @@ public class DukeNukemConnector {
      */
     @Processor
 	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException{
-		return getClient().addEntitlement(email, productCode, termCode, promoCode, startDate, endDate, orderId);
+    	int count = 0;
+		int maxTries = 3;
+		while(true) {
+		    try {
+		    	return getClient().addEntitlement(email, productCode, termCode, promoCode, startDate, endDate, orderId);
+		    } catch (DukeNukemServerErrorException e) {
+		        if (++count == maxTries) throw e;
+		    }
+		}
 	}
     
     /**
@@ -109,7 +149,15 @@ public class DukeNukemConnector {
      */
     @Processor
     public String getUserJson(String email) throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException{
-    	return getClient().getUserJson(email);
+    	int count = 0;
+		int maxTries = 3;
+		while(true) {
+		    try {
+		    	return getClient().getUserJson(email);
+		    } catch (DukeNukemServerErrorException e) {
+		        if (++count == maxTries) throw e;
+		    }
+		}
     }
 
     public ConnectorConfig getConfig() {

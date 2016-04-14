@@ -258,6 +258,7 @@ public class DukeNukemClient {
 	/** Returns an active application token */
 	private String getApplicationToken() throws DukeNukemConnectorException, DukeNukemBusinessException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		if(StringUtils.isEmpty(token) || System.currentTimeMillis()/1000 - lastUpdatedTsSeconds >= TimeUnit.HOURS.toSeconds(TOKEN_VALIDITY_LIMIT_HOURS)){
+			DukeNukemClient.token = null;
 			requestNewToken();
 		} 
 		return token;
@@ -276,22 +277,24 @@ public class DukeNukemClient {
 				.queryParam("id", generateHashedValue(connectorConfig.getThirdPartyId() + Long.toString(lastUpdatedTsSeconds)))
 				.queryParam("ts", Long.toString(lastUpdatedTsSeconds));
 
-		LOGGER.info(String.format("Sending request to %s: %s", ECONOMIST_GET_APPLICATION_TOKEN, request));
-
-		ClientResponse clientResponse = request.get(ClientResponse.class);
-		
+		ClientResponse clientResponse = null;
 		String responseString = null;
-				
-		try {
-			responseString = getValidatedResponse(clientResponse);
-		} catch(DukeNukemBusinessException e){
-			throw new DukeNukemConnectorException(StringUtils.isEmpty(e.getMessage()) ? "Error status " + clientResponse.getStatus() : e.getMessage());
-		}
 		
-		try {
-			return jsonObjectMapper.readValue(responseString, DukeNukemGetApplicationTokenResponse.class).getToken();
-		} catch (IOException e) {
-			throw new DukeNukemConnectorException(e.getMessage());
+		int count = 0;
+		int maxTries = 3;
+		while(true) {
+			try {
+				LOGGER.info(String.format("Sending request to %s: %s", ECONOMIST_GET_APPLICATION_TOKEN, request));
+				clientResponse = request.get(ClientResponse.class);
+				responseString = getValidatedResponse(clientResponse);
+				return jsonObjectMapper.readValue(responseString, DukeNukemGetApplicationTokenResponse.class).getToken();
+			} catch (DukeNukemServerErrorException e) {
+				if (++count == maxTries) throw e;
+			} catch(DukeNukemBusinessException e){
+				if (++count == maxTries) throw new DukeNukemConnectorException(StringUtils.isEmpty(e.getMessage()) ? "Error status " + clientResponse.getStatus() : e.getMessage());
+			} catch (IOException e) {
+				if (++count == maxTries) throw new DukeNukemConnectorException(e.getMessage());
+			}
 		}
 	}
 

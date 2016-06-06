@@ -188,7 +188,7 @@ public class DukeNukemClient {
 	}
 	
 	/** Returns response from the DukeNukem economist.addEntitlement call */
-	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
+	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId, String salesChannel) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException {
 		try {
 			MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 			formData.add("token", getApplicationToken());
@@ -201,6 +201,7 @@ public class DukeNukemClient {
 			formData.add("start", startDate);
 			formData.add("end", endDate);
 			formData.add("orderid", orderId);
+			formData.add("sales_channel", salesChannel);
 			
 			logInfo(ECONOMIST_ADD_ENTITLEMENT, formData);
 
@@ -360,9 +361,11 @@ public class DukeNukemClient {
 //		System.out.println(dukeNukemClient.getUserJson("martina.tutokiova@globallogic.com"));
 //		System.out.println(dukeNukemClient.getUserDetails("martina.tutokiova@globallogic.com", "orange1234"));
 //		System.out.println(dukeNukemClient.getEmailStatus("martina.tutokiova@globallogic.com"));
-//		System.out.println(dukeNukemClient.addUser("martina.tuto@globallogic.com", "orange1234", "SK", Gender.M, "1986", "Martina", "Tut", YesNoEnum.Y, YesNoEnum.N));
-//		System.out.println(dukeNukemClient.getUserDetails("martina.tuto@globallogic.com"));
-//		System.out.println(dukeNukemClient.addEntitlement("martina.tutokiova@globallogic.com", "A", "ABC", "PROMO", "1458815627", "", ""));
+		System.out.println(dukeNukemClient.addUser("martina.tutooooo@globallogic.com", "orange1234", "SK", Gender.M, "1986", "Martina", "Tut", false, false));
+
+		System.out.println(dukeNukemClient.addEntitlement("martina.tutooooo@globallogic.com", "A", "ABC", "PROMO", "1458815627", "", "", "abc"));
+//		System.out.println(dukeNukemClient.getUserDetails("martina.tutokiova@globallogic.com"));
+		
 	}
 
 }

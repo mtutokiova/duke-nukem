@@ -124,11 +124,11 @@ public class DukeNukemConnector {
      * @throws DukeNukemServerErrorException 
      */
     @Processor
-	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException{
+	public String addEntitlement(String email, String productCode, String termCode, String promoCode, String startDate, String endDate, String orderId, String salesChannel) throws DukeNukemConnectorException, DukeNukemUserNotFoundException, DukeNukemServerErrorException{
     	int count = 0;
 		while(true) {
 		    try {
-		    	return getClient().addEntitlement(email, productCode, termCode, promoCode, startDate, endDate, orderId);
+		    	return getClient().addEntitlement(email, productCode, termCode, promoCode, startDate, endDate, orderId, salesChannel);
 		    } catch (DukeNukemServerErrorException e) {
 		        if (++count == MAX_TRIES) throw e;
 		    }

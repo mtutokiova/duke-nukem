@@ -200,7 +200,7 @@ public class DukeNukemClient {
 			formData.add("promo", promoCode);
 			formData.add("start", startDate);
 			formData.add("end", endDate);
-			formData.add("orderid", orderId);
+			formData.add("order_id", orderId);
 			formData.add("sales_channel", salesChannel);
 			
 			logInfo(ECONOMIST_ADD_ENTITLEMENT, formData);
